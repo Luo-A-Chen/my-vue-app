@@ -32,6 +32,13 @@ api.interceptors.response.use(
     (error) => {
         if (error.response) {
             console.error('API Error:', error.response.status, error.response.data);
+            if (error.response.status === 401) {
+                const userStore = useUserStore();
+                userStore.logout();
+                if (window.location.pathname !== '/login') {
+                    window.location.href = '/login';
+                }
+            }
         }else{
             console.error('Network Error:', error.message);
         }
