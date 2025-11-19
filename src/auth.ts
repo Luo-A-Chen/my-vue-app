@@ -1,7 +1,11 @@
 import axios from 'axios'
+import { useUserStore } from './store';
 
+//全局请求拦截器
 export const api= axios.create({
-    baseURL:'http://localhost:8080',
+    baseURL:'http://localhost:8080',//本地环境
+    // baseURL:'/api',//线上代理环境
+    // baseURL:'http://47.105.118.0:8080',
     timeout:10000,
     headers:{
         'Content-Type':'application/json'
@@ -10,7 +14,7 @@ export const api= axios.create({
 
 api.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem('token');
+        const token = useUserStore().token;
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
         }
