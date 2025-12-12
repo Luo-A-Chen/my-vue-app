@@ -386,6 +386,9 @@ const handleSubmit = async () => {
         uploadProgress.value = progressEvent.percent;
       },
       onSuccess: (response: any, file: any) => {
+        // 添加日志记录，避免未使用参数警告
+        console.log('上传成功响应:', response);
+        console.log('上传文件信息:', file.name, file.size);
         message.success('视频上传成功！');
         // 延迟跳转，让用户看到成功消息
         setTimeout(() => {

@@ -8,6 +8,7 @@ import VideoPlayer from "../components/VideoPlayer.vue";
 import { useUserStore } from '../store';
 
 //路由配置
+
 const routes=[
     { path:'/',component:Home, meta: { requiresAuth: true } },
     { path:'/login',component:Login, meta: { requiresAuth: false } },
