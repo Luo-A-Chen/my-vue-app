@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUserStore } from '../store';
 import { api } from '../auth';
 import { 
   PlayCircleOutlined, 
-  FireOutlined,
   ClockCircleOutlined,
   UserOutlined,
   LogoutOutlined,
   UploadOutlined
 } from '@ant-design/icons-vue';
+import { message } from 'ant-design-vue';
 const router = useRouter();
 const userStore = useUserStore();
 
@@ -52,8 +52,45 @@ const handleStorageChange = (event: StorageEvent) => {
   }
 };
 
+// 页面卸载时清理事件监听
+onUnmounted(() => {
+  window.removeEventListener('storage', handleStorageChange);
+});
+
 onMounted(() => {
+  console.log('首页加载完成');
+  
+  // 添加存储事件监听
   window.addEventListener('storage', handleStorageChange);
+  
+  // 确保用户信息正确恢复
+  const storedUserInfo = localStorage.getItem('UserInfo');
+  const storedToken = localStorage.getItem('UserToken');
+  
+  console.log('存储的用户信息:', storedUserInfo);
+  console.log('存储的token:', storedToken);
+  console.log('store中的用户信息:', userStore.userInfo);
+  console.log('store中的token:', userStore.token);
+  
+  // 如果 localStorage 中有用户信息但 store 中没有，重新设置
+  if (storedUserInfo && storedUserInfo !== 'null' && !userStore.userInfo) {
+    try {
+      const userInfo = JSON.parse(storedUserInfo);
+      console.log('恢复用户信息:', userInfo);
+      userStore.setUserInfo(userInfo);
+    } catch (error) {
+      console.error('恢复用户信息失败:', error);
+    }
+  }
+  
+  // 如果 localStorage 中有 token 但 store 中没有，重新设置
+  if (storedToken && !userStore.token) {
+    console.log('恢复token:', storedToken);
+    userStore.setToken(storedToken);
+  }
+  
+  // 加载后端数据
+  fetchRecommendVideos();
 });
 
 // 编辑个人信息
@@ -85,14 +122,14 @@ const fetchRecommendVideos = async () => {
     // 所以这里的 response 就是后端返回的 {code: 200, message: '操作成功', data: [...]}
     
     // 检查后端返回的code是否为200
-    if (response && response.code === 200) {
-      const videos = response.data || [];
+    if (response && (response as any).code === 200) {
+      const videos = (response as any).data || [];
       videoList.value = videos;
       console.log('成功获取推荐视频:', videos.length, '个');
       console.log('视频列表详情:', videos);
     } else {
-      console.error('获取推荐视频失败:', response?.message || '未知错误');
-      console.error('响应code:', response?.code);
+      console.error('获取推荐视频失败:', (response as any)?.message || '未知错误');
+      console.error('响应code:', (response as any)?.code);
     }
   } catch (error: any) {
     console.error('请求推荐视频接口失败:', error);
@@ -124,7 +161,7 @@ const processedVideoList = computed(() => {
   
   const processed = videoList.value
     .filter(video => {
-      console.log('过滤视频:', video.id, 'status:', video.status);
+      console.log('过滤视频:', video.id, 'status:', video.status, 'cover:', video.cover);
       return video.status === 1;
     })
     .map(video => {
@@ -133,13 +170,13 @@ const processedVideoList = computed(() => {
         // 添加前端需要的字段
         thumbnail: video.cover, // 后端cover对应前端thumbnail
         durationDisplay: formatDuration(video.duration), // 格式化时长显示
-        views: '0', // 后端没有提供，暂时设为0
-        likes: '0', // 后端没有提供，暂时设为0
+        views: Math.floor(Math.random() * 1000) + '', // 后端没有提供，生成随机数
+        likes: Math.floor(Math.random() * 100) + '', // 后端没有提供，生成随机数
         uploader: '未知上传者', // 后端没有提供
         category: '表演', // 后端没有提供，暂时设为默认值
         difficulty: '中级' // 后端没有提供，暂时设为默认值
       };
-      console.log('处理后的视频:', result);
+      console.log('处理后的视频 - ID:', result.id, 'thumbnail:', result.thumbnail, 'title:', result.title);
       return result;
     });
   
@@ -180,8 +217,9 @@ const filteredVideos = computed(() => {
 });
 
 const playVideo = (video: any) => {
-  // 在实际项目中，这里可以打开视频播放模态框
-  console.log('播放视频:', video.title);
+  // 跳转到视频播放页面
+  console.log('播放视频:', video.title, 'ID:', video.id);
+  router.push(`/video-player/${video.id}`);
 };
 
 // const likeVideo = (video: any) => {
@@ -191,6 +229,27 @@ const playVideo = (video: any) => {
 
 const handleUploadVideo = () => {
   router.push('/video');
+};
+
+// 调试用户状态
+const debugUserState = () => {
+  console.log('=== 用户状态调试信息 ===');
+  console.log('Store 状态:');
+  console.log('- token:', userStore.token);
+  console.log('- userInfo:', userStore.userInfo);
+  console.log('- isLoggedIn:', userStore.isLoggedIn);
+  
+  console.log('LocalStorage 状态:');
+  console.log('- UserToken:', localStorage.getItem('UserToken'));
+  console.log('- UserInfo:', localStorage.getItem('UserInfo'));
+  
+  console.log('组件状态:');
+  console.log('- currentUserInfo:', currentUserInfo.value);
+  console.log('- isLoggedIn computed:', isLoggedIn.value);
+  console.log('- userInfo computed:', userInfo.value);
+  
+  // 显示调试信息
+  message.info('调试信息已输出到控制台，请按 F12 查看');
 };
 
 // 图片加载失败处理
@@ -247,6 +306,10 @@ onMounted(() => {
                 <a-menu class="user-menu">
                   <a-menu-item @click="handleEditProfile">
                     <UserOutlined /> 个人资料
+                  </a-menu-item>
+                  <a-menu-divider />
+                  <a-menu-item @click="debugUserState">
+                    🐛 调试用户状态
                   </a-menu-item>
                   <a-menu-divider />
                   <a-menu-item @click="handleLogout">

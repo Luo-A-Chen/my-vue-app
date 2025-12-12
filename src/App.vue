@@ -49,12 +49,16 @@ const router = useRouter();
 
 // 应用启动前的token校验
 onBeforeMount(async () => {
+  // 首先确保用户状态正确恢复
+  await restoreUserState();
+  // 然后验证token
   await validateTokenOnStartup();
 });
 
 // 页面加载时的初始化
 onMounted(() => {
   console.log('App mounted, user login status:', userStore.isLoggedIn);
+  console.log('App mounted, user info:', userStore.userInfo);
 });
 
 // 启动时token验证函数
@@ -93,6 +97,41 @@ const validateTokenOnStartup = async () => {
       router.push('/login');
     }
   }
+};
+
+// 恢复用户状态的函数
+const restoreUserState = async () => {
+  console.log('开始恢复用户状态...');
+  
+  const storedToken = localStorage.getItem('UserToken');
+  const storedUserInfo = localStorage.getItem('UserInfo');
+  
+  console.log('localStorage 中的 token:', storedToken);
+  console.log('localStorage 中的 userInfo:', storedUserInfo);
+  console.log('store 中的 token:', userStore.token);
+  console.log('store 中的 userInfo:', userStore.userInfo);
+  
+  // 如果 localStorage 中有数据但 store 中没有，恢复数据
+  if (storedToken && !userStore.token) {
+    console.log('恢复 token 到 store');
+    userStore.setToken(storedToken);
+  }
+  
+  if (storedUserInfo && storedUserInfo !== 'null' && !userStore.userInfo) {
+    try {
+      const userInfo = JSON.parse(storedUserInfo);
+      console.log('恢复用户信息到 store:', userInfo);
+      userStore.setUserInfo(userInfo);
+    } catch (error) {
+      console.error('恢复用户信息失败:', error);
+      localStorage.removeItem('UserInfo');
+    }
+  }
+  
+  console.log('用户状态恢复完成');
+  console.log('最终 store 状态 - token:', userStore.token);
+  console.log('最终 store 状态 - userInfo:', userStore.userInfo);
+  console.log('最终 store 状态 - isLoggedIn:', userStore.isLoggedIn);
 };
 
 // 检查token有效性的函数
@@ -312,4 +351,4 @@ img {
 .ant-link:hover {
   color: #40a9ff;
 }
-</style>
+</style>

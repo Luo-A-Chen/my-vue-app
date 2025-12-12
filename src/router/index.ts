@@ -4,6 +4,7 @@ import Login from '../components/Login.vue'
 import Register from '../components/Register.vue'
 import Edit from "../components/Edit.vue";
 import Video from "../components/Video.vue";
+import VideoPlayer from "../components/VideoPlayer.vue";
 import { useUserStore } from '../store';
 
 //路由配置
@@ -13,6 +14,7 @@ const routes=[
     { path:'/register',component:Register, meta: { requiresAuth: false } },
     { path:'/edit',component:Edit, meta: { requiresAuth: true } },
     { path:'/video',component:Video, meta: { requiresAuth: true } },
+    { path:'/video-player/:id',component:VideoPlayer, meta: { requiresAuth: true } },
 ];
 
 const router = createRouter({
@@ -21,7 +23,7 @@ const router = createRouter({
 });
 
 // 路由导航守卫
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
     const userStore = useUserStore();
     
     // 检查路由是否需要认证

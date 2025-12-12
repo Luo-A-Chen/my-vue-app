@@ -40,7 +40,7 @@ const handleLogin = async () => {
 
     if (result) {
       userStore.setToken(result.data.token);
-      userStore.userInfo = result.data;
+      userStore.setUserInfo(result.data); // 使用 setUserInfo 方法确保持久化
       message.success('登录成功！');
       setTimeout(() => {
         router.push('/');

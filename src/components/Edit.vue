@@ -212,11 +212,37 @@ const handleAvatarUpload = async (info: any) => {
       }
     });
     
-    // 更新头像URL - 添加更多可能的字段名
-    const avatarUrl = response.data.avatarUrl || response.data.url || response.data.avatar || response.data.imageUrl;
+    console.log('头像上传响应:', response);
+    console.log('响应数据:', response.data);
+    console.log('响应类型:', typeof response.data);
+    console.log('完整响应对象键:', Object.keys(response));
+    if (typeof response.data === 'object' && response.data) {
+      console.log('响应数据对象键:', Object.keys(response.data));
+    }
+    
+    // 更新头像URL - 根据后端返回的数据结构调整
+    let avatarUrl = '';
+    
+    // 如果响应直接是字符串URL
+    if (typeof response.data === 'string') {
+      avatarUrl = response.data;
+    } 
+    // 如果响应是对象，尝试多种可能的字段名
+    else if (typeof response.data === 'object' && response.data) {
+      avatarUrl = response.data.avatarUrl || 
+                  response.data.url || 
+                  response.data.avatar || 
+                  response.data.imageUrl ||
+                  response.data.data ||
+                  response.data.path ||
+                  response.data.filePath;
+    }
+    
+    console.log('提取的头像URL:', avatarUrl);
     
     if (!avatarUrl) {
-      message.error('头像上传成功，但未获取到有效的头像URL');
+      console.error('无法从响应中提取头像URL，完整响应:', response);
+      message.error('头像上传成功，但未获取到有效的头像URL，请检查后端返回格式');
       return;
     }
     
